@@ -7,10 +7,11 @@ the source of truth. No destination input or public destination output is needed
 
 The existing system policy is adopted with a declarative import. Import is a
 no-op once the resource is managed. The policy keeps its single `SECURITY_CSD`
-Send route and platform notification defaults. Referencing the receiver's computed
-ID causes an in-place policy update during initial restoration, resolving the
-dangling reference by name and namespace without hardcoding a UID. Both resources
-have deletion protection.
+Send route and platform notification defaults. A local `terraform_data` generation
+resource is replaced when the receiver changes. Its persistent ID is recorded in
+policy ownership annotations, forcing an in-place update during restoration even
+when the receiver name is unchanged. The API resolves the reference by name and
+namespace without hardcoded UIDs. Both system resources have deletion protection.
 
 ## Ownership and deployment
 
@@ -37,9 +38,11 @@ terraform -chdir=terraform/system-notifications show -json /private/path/notific
 Keep plans, logs, JSON and raw state private: they contain the destination even
 when human-readable output marks it sensitive. Bind the reviewed plan to the
 exact merged source, verified executor and cloud identity. The initial plan must
-create only the missing receiver and import/update the existing policy in place;
-reject deletion, replacement, unrelated resources, destination differences, route
-changes or public outputs. Keep `adopt_existing_policy=true` for this tenant;
+create only the missing receiver and its local generation value, and import/update
+the existing policy in place. A follow-up adoption of the generation value changes
+only that local value and the policy ownership annotations/reference. Reject
+system-object deletion/replacement, unrelated resources, destination differences,
+route changes or public outputs. Keep `adopt_existing_policy=true` for this tenant;
 `false` exists for isolated mock tests, not to avoid import errors.
 
 Apply the exact reviewed saved plan under the scoped deployment authorization.
@@ -55,7 +58,8 @@ terraform -chdir=terraform/system-notifications plan -input=false -detailed-exit
 Exit code `0` establishes Terraform idempotence; `2` means changes remain and `1`
 means failure. Routine plans also propagate future dedicated-destination changes.
 If a managed receiver disappears, inspect its deletion and ownership first;
-the plan will propose restoration and an in-place policy reference update.
+the plan will propose restoration, local generation replacement and an in-place
+policy reference update. An unchanged generation makes repeated plans stable.
 
 ## Validation and acceptance
 
