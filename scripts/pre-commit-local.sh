@@ -18,3 +18,5 @@ fi
 node --test tests/test-csd-traffic.mjs
 bash tests/test-runtime-identity.sh
 bash tests/test-public-identifiers.sh
+
+bash tests/test-system-notifications.sh
