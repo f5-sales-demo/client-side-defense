@@ -14,6 +14,11 @@ run "system_notification_contract" {
   command = apply
 
   assert {
+    condition     = xcsh_alert_policy.system.annotations["terraform.f5-sales-demo.com/receiver-generation"] == terraform_data.receiver_generation.id && xcsh_alert_policy.system.annotations["terraform.f5-sales-demo.com/owner"] == "client-side-defense/system-notifications"
+    error_message = "Policy ownership must bind to the receiver generation so restoration sends an actual update."
+  }
+
+  assert {
     condition     = data.xcsh_alert_receiver.dedicated.name == "csd-page-tamper-alert-receiver" && data.xcsh_alert_receiver.dedicated.namespace == "client-side-defense"
     error_message = "The existing dedicated receiver must be the destination source."
   }

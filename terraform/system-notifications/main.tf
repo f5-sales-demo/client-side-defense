@@ -37,13 +37,32 @@ import {
   id       = each.value
 }
 
+# A recreated receiver retains its name/ID. A persistent generation value makes
+# Terraform send the policy update instead of collapsing it to an identical name.
+resource "terraform_data" "receiver_generation" {
+  input = xcsh_alert_receiver.system.id
+
+  # A refreshed-away receiver plans creation, which replace_triggered_by alone
+  # does not cover. Its unknown ID must also force a new local generation.
+  triggers_replace = xcsh_alert_receiver.system.id
+
+  lifecycle {
+    replace_triggered_by = [xcsh_alert_receiver.system]
+  }
+}
+
 resource "xcsh_alert_policy" "system" {
   name      = "client-side-defense-policy"
   namespace = "system"
 
+  annotations = {
+    "terraform.f5-sales-demo.com/owner"               = "client-side-defense/system-notifications"
+    "terraform.f5-sales-demo.com/receiver-generation" = terraform_data.receiver_generation.id
+  }
+
   receivers {
-    # The computed ID defers initial adoption until receiver creation and makes
-    # Terraform update the dangling reference even when its name is unchanged.
+    # Retain the dependency on receiver creation; the generation annotation
+    # makes the policy update survive resolution to an unchanged name.
     name      = xcsh_alert_receiver.system.id
     namespace = xcsh_alert_receiver.system.namespace
   }
