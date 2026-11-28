@@ -2023,7 +2023,7 @@ this documentation task performs no fresh live verification or infrastructure op
 
 </div>
 
-### Protected-domain visibility discrepancy: registration remains unresolved
+### Protected-domain visibility discrepancy: historical observations
 
 <div data-personalize="off">
 
@@ -2045,6 +2045,61 @@ Do not blindly recreate the domain or bypass its authoritative infrastructure ow
 Detection [#1259](https://github.com/f5-sales-demo/client-side-defense/issues/1259), notification
 configuration [#1285](https://github.com/f5-sales-demo/client-side-defense/issues/1285) and the domain
 investigation remain separate and open; the documentation merge resolves none of them.
+
+</div>
+
+### Protected-domain registration and console verification: 2026-11-28
+
+<div data-personalize="off">
+
+The registration and console visibility gate in
+[issue #1296](https://github.com/f5-sales-demo/client-side-defense/issues/1296) was
+verified on November 28. The earlier empty console and failed reads remain historical
+evidence; they are not the current result.
+
+| Independent check | Current observation | Acceptance boundary |
+| --- | --- | --- |
+| Ubuntu API status | HTTP `200`, `isConfigured=true`, `isEnabled=true` | CSD configuration enabled |
+| Namespace collection | One matching root, `errors=[]`, `date_added=2026-10-06T16:19:17Z` | Unique registration for the requested namespace and root |
+| Authenticated console | Manage Configuration displays the expected root and matching timestamp in the correct namespace | Console and API agree after reload |
+| Terraform ownership | Encrypted application state serial 18 retains the configured domain name, namespace and root; last state write October 6 | Existing ownership preserved |
+| Application inclusion | Intended hostname and `js_insert_all_pages` remain configured; ordinary payment GET retains XCTO `nosniff`, XFO `DENY` and Cache-Control `no-store, max-age=0` | Intended root, hostname and payment path remain covered by configuration |
+
+The root-domain contract includes subdomains, so the protected root covers the configured
+payment hostname. This establishes registration and configured page inclusion. It does
+not establish collector acceptance, an eligible header baseline or alert generation.
+
+The named protected-domain getter still returns HTTP `501` / code `12`. The collection
+returns the domain in `get_spec` with blank metadata name and UID. These are distinct
+from absence: provider `15.2.0` falls back only on typed `501`, verifies a unique exact
+root in the requested namespace, rejects collection errors or conflicting identifiers,
+and retains the configured Terraform name. A blank remote UID is not a new ownership
+key and does not justify recreation. See the pinned
+[verification implementation](https://github.com/f5-sales-demo/terraform-provider-xcsh/blob/v15.2.0/internal/client/protected_domain_verification.go)
+and [root-domain contract](https://docs.cloud.f5.com/docs-v2/platform/reference/api-ref/ves-io-schema-shape-client_side_defense-protected_domain-api-list).
+
+November 15–16 reads returned structured F5 HTTP `500` / code `13` errors from both
+Ubuntu and the authenticated console, including `ListResource` internal failure and
+`ListResponse allocation failed: Nil ResourceResponse`. This locates the observed failure
+in the hosted CSD read service. It was not explained by a Netskope transport failure,
+inactive subscription or denied access. The exact backend trigger and recovery change
+are unavailable; the failure no longer reproduces in the verified API and console reads.
+No registration recreation, state edit or refresh suppression was used for this recovery.
+
+The separate notification repair was delivered in
+[PR #1381](https://github.com/f5-sales-demo/client-side-defense/pull/1381) and
+[PR #1382](https://github.com/f5-sales-demo/client-side-defense/pull/1382).
+The system receiver resolves through its typed name/namespace reference, matches the
+existing dedicated destination, and the policy retains its single `SECURITY_CSD` Send
+route. A full refreshed system-notification plan against current merged source returned
+exit `0` with no changes. This proves configuration convergence; no notification test or
+new correlated header alert is claimed.
+
+The full application refresh also completed, including protected-domain verification,
+but returned exit `2`: existing repository-tag reconciliation from the former repository
+name also deferred module reads and proposed an ECS task-definition replacement. That
+plan was retained without applying it. No CSD resource change was proposed. Do not claim
+a clean full-application plan or apply that unrelated plan as a registration repair.
 
 </div>
 
@@ -2091,9 +2146,14 @@ no certification, Modified-only, Compromised or completed matrix claim follows.
 describes server header collection, different end users and sequential moving-baseline cycles.
 It does not specify a session threshold, processing SLA or headed/Xvfb requirement.
 
-**First prerequisite:** reconcile the current protected-domain UI/API discrepancy in
-[#1296](https://github.com/f5-sales-demo/client-side-defense/issues/1296) and establish effective registration
-before further header trials. Do not increase traffic to compensate for unknown registration.
+**Registration prerequisite:** verified on November 28 in the
+[registration and console record](#protected-domain-registration-and-console-verification-2026-11-28).
+Revalidate the same root, namespace, console view and owning application before another
+campaign. The next [#1259](https://github.com/f5-sales-demo/client-side-defense/issues/1259)
+gate remains header eligibility, collector acceptance and observable baseline/comparison
+cycles. Registration recovery and receiver repair do not change the preserved
+`NO_ALERT_WITHIN_WINDOW` outcomes. Resolve the full-application plan findings through
+their owner before any test requiring a clean plan. No new canary is authorized here.
 
 1. **Collector attribution and reads:** which request and caller supply the persisted header
    baseline? Does the observed same-path `HEAD` belong to that collector, and why is it canceled
